@@ -1,0 +1,23 @@
+{
+  "file": "invoice_weight_lbs.pdf",
+  "doc_type": "commercial_invoice",
+  "customer_id": "acme_electronics",
+  "fields": {
+    "consignee_name": "Acme Electronics Pvt Ltd",
+    "hs_code": "8471.30.10",
+    "port_of_loading": "Nhava Sheva, India",
+    "port_of_discharge": "Rotterdam, Netherlands",
+    "incoterms": "FOB Nhava Sheva",
+    "description_of_goods": "Laptop computers, 14-inch, model VX-14 (1,200 units)",
+    "gross_weight": "27,448 LBS",
+    "invoice_number": "INV-2026-0142"
+  },
+  "expected_decision": "amendment",
+  "acceptable_decisions": [
+    "amendment"
+  ],
+  "planted_errors": [
+    "gross_weight"
+  ],
+  "notes": "weight in LBS; customer requires KG"
+}

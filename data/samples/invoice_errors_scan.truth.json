@@ -1,0 +1,25 @@
+{
+  "file": "invoice_errors_scan.jpg",
+  "doc_type": "commercial_invoice",
+  "customer_id": "acme_electronics",
+  "fields": {
+    "consignee_name": "Acme Electronics Pvt Ltd",
+    "hs_code": "8528.72.00",
+    "port_of_loading": "Nhava Sheva, India",
+    "port_of_discharge": "Rotterdam, Netherlands",
+    "incoterms": "CIF Rotterdam",
+    "description_of_goods": "Laptop computers, 14-inch, model VX-14 (1,200 units)",
+    "gross_weight": "12,450.50 KG",
+    "invoice_number": "INV-2026-0142"
+  },
+  "expected_decision": "amendment",
+  "acceptable_decisions": [
+    "amendment",
+    "human_review"
+  ],
+  "planted_errors": [
+    "incoterms",
+    "hs_code"
+  ],
+  "notes": "messy scan (skew, blur, noise, stamp, JPEG q35) of invoice_errors.pdf"
+}
