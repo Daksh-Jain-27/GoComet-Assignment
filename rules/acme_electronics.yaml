@@ -1,0 +1,48 @@
+# Customer rule set. This is configuration, not code: onboarding a new customer
+# means writing a new YAML file (the FDE's job), not changing the pipeline.
+customer_id: acme_electronics
+customer_name: Acme Electronics
+version: "2026-09-01"
+
+# Below this, a field is "uncertain" no matter what the rule check says.
+confidence_threshold: 0.85
+
+# Governance knob: auto-approve only if every value was verified against a reliable
+# text layer. true = scans always get a CG look (safe default for a pilot).
+# Can be relaxed per customer once the offline eval shows scans are reliable.
+auto_approve_requires_grounding: true
+
+consignee_name:
+  expected: "Acme Electronics Pvt Ltd"
+  aliases:
+    - "Acme Electronics Private Limited"
+    - "Acme Electronics Pvt. Ltd."
+
+hs_code:
+  allowed_prefixes: ["8471", "8473"]     # computers and parts
+
+incoterms:
+  allowed: ["FOB"]
+
+port_of_loading:
+  allowed: ["INNSA", "INMUN"]            # UN/LOCODE: Nhava Sheva, Mundra
+
+port_of_discharge:
+  allowed: ["NLRTM", "DEHAM"]            # Rotterdam, Hamburg
+
+gross_weight:
+  unit: "KG"
+  max: 25000
+
+invoice_number:
+  pattern: "^INV-\\d{4}-\\d{4}$"
+
+description_of_goods:
+  keywords: ["laptop", "notebook", "computer", "server", "keyboard", "motherboard", "monitor"]
+
+# Not every field appears on every document type (a BL rarely carries the invoice number).
+required_fields:
+  commercial_invoice: [consignee_name, hs_code, port_of_loading, port_of_discharge, incoterms, description_of_goods, gross_weight, invoice_number]
+  bill_of_lading:     [consignee_name, hs_code, port_of_loading, port_of_discharge, description_of_goods, gross_weight]
+  packing_list:       [consignee_name, description_of_goods, gross_weight, invoice_number]
+  unknown:            [consignee_name, hs_code, port_of_loading, port_of_discharge, incoterms, description_of_goods, gross_weight, invoice_number]
