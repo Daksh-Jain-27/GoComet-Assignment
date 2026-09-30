@@ -13,9 +13,6 @@ Three agents do the work:
 3. **Router:** decides approve / review / amend and explains why. It can draft the email to the
    shipper, but **it never sends anything**. A person always does.
 
-Architecture, design decisions and failure analysis are in the technical write-up and PRD
-(see [Documents](#documents)).
-
 ---
 
 ## 1. Requirements
