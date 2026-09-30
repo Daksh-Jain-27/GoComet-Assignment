@@ -141,7 +141,7 @@ def low_confidence_fields(ex: ExtractionResult, threshold: float) -> list[str]:
 
 
 def refine(doc_id: str, ex: ExtractionResult, doc_hi: dict, client: LLMClient, model: str,
-           fields: list[str]) -> ExtractionResult:
+           fields: list[str], independent: bool = True) -> ExtractionResult:
     """Re-read only `fields` with a stronger model on higher-DPI pages, then merge:
        - both reads agree            -> keep, confidence raised (bounded, still capped if ungrounded)
        - reads disagree              -> keep first value, confidence <= 0.40, alt value recorded
@@ -172,7 +172,9 @@ def refine(doc_id: str, ex: ExtractionResult, doc_hi: dict, client: LLMClient, m
         sig["agreement"] = same
         if same and f.value is not None:
             ungrounded = f.signals.get("grounded") is False
-            boosted = min(0.90, (f.signals.get("model_confidence", f.confidence) + r2.confidence) / 2)
+            max_boost = 0.90 if independent else 0.80
+            boosted = min(max_boost, (f.signals.get("model_confidence", f.confidence) + r2.confidence) / 2)
+            sig["independent_second_read"] = independent
             conf = f.confidence if ungrounded or not f.signals.get("format_ok", True) else max(f.confidence, boosted)
             merged.append(f.model_copy(update={"confidence": round(conf, 3), "signals": sig}))
         elif same:  # both say absent

@@ -34,3 +34,17 @@ your machine and add your own, especially from LLM mode.
   -> parser, with each downgrade logged. Also moved drafting to Flash-Lite (route took 27 s).
 - Production version: LiteLLM router with provider-level fallbacks (e.g. a second provider),
   and an alert if the fallback rate goes above a threshold.
+
+## F4: A model "agreeing with itself" inflated confidence on a scan
+- Found: invoice_errors_scan.jpg in LLM mode while the primary model (Flash) was overloaded.
+  Flash-Lite did the first read AND the refine read. Both agreed, so every field was lifted
+  from 0.70 (unverifiable, no OCR) to 0.90 and treated as confident.
+- Why it matters: refine assumes two independent readers. The same model on the same image
+  repeats its own errors, so the agreement proved little. Auto-approve was still blocked
+  (Rule 3a), but a misread would have become a confident amendment request.
+- Fix: same-model agreement is capped at 0.80 (below threshold), so fields stay uncertain and
+  go to CG. Different-model agreement can still reach 0.90. Covered by
+  test_same_model_agreement_is_not_enough.
+- Lesson: the fallback chain and the refine step interact. In production, split them: a
+  refine model that must differ from the extractor, and a separate availability chain.
+  

@@ -136,7 +136,11 @@ def refine(s: PipelineState) -> dict:
     client = LLMClient(s["run_id"], s.get("cost_usd", 0.0))
     try:
         doc_hi = load_document(s["doc_path"], SETTINGS.runs_dir / s["run_id"], SETTINGS.refine_dpi, SETTINGS.max_pages)
-        ex = extractor.refine(s["doc_id"], ex, doc_hi, client, SETTINGS.fallback_model, low)
+        independent = SETTINGS.fallback_model not in ex.extractor
+        if not independent:
+            errors.append(f"Second read used the same model as the first ({SETTINGS.fallback_model}); "
+                          f"agreement capped at 0.80, so fields stay uncertain for CG")
+        ex = extractor.refine(s["doc_id"], ex, doc_hi, client, SETTINGS.fallback_model, low, independent)
     except (LLMError, BudgetExceeded, ValueError) as e:
         errors.append(f"Refinement skipped ({type(e).__name__}); low-confidence fields stay uncertain")
     return {"extraction": ex.model_dump(), "refined": True, "cost_usd": client.spent_usd, "errors": errors}

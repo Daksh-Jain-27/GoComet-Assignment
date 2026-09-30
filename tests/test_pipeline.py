@@ -146,3 +146,29 @@ def test_llm_generated_write_query_is_refused(fake):
     fake(script={"nl2sql": {"sql": "DELETE FROM documents"}})
     r = ask("delete everything", mode="llm")
     assert r["rows"] == [] and "Could not produce a valid query" in r["answer"]
+
+def test_same_model_agreement_is_not_enough(fake, monkeypatch):
+    # primary is down -> fallback extracts -> refine uses the SAME fallback model
+    f = fake(script={"extract": extraction(GOOD, conf=0.95), "refine": extraction(GOOD, conf=0.95)})
+    real = f.completion
+    def completion(**kw):
+        if kw["model"] != "fake/strong-vision" and kw["metadata"]["generation_name"] == "extract":
+            raise ConnectionError("primary down")
+        return real(**kw)
+    f.completion = completion
+    s = run("invoice_errors_scan.jpg")
+    assert "fake/strong-vision (refine)" in s["extraction"]["extractor"]
+    assert all(x["confidence"] < 0.85 for x in s["extraction"]["fields"] if x["value"] is not None)
+    assert s["decision"]["action"] == "human_review"
+
+def test_review_surfaces_likely_violations_first_with_provisional_draft(fake):
+    bad = {**GOOD, "incoterms": "CIF Rotterdam", "hs_code": "8528.72.00"}
+    fake(script={"extract": extraction(bad, conf=0.6), "refine": extraction(bad, conf=0.6)})
+    s = run("invoice_errors.pdf")
+    d = s["decision"]
+    assert d["action"] == "human_review"                       # still not confident
+    assert "LIKELY PROBLEMS" in d["reasoning"]
+    assert d["cg_checklist"][0].startswith("Check first")      # likely problems listed first
+    assert d["drafted_by"] == "template (provisional)"
+    assert "HS code" in d["amendment_draft"] and "Incoterms" in d["amendment_draft"]
+

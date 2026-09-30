@@ -114,6 +114,7 @@ class FieldCheck(BaseModel):
     confidence: float
     evidence: Optional[str] = None
     page: Optional[int] = None
+    rule_verdict: Optional[bool] = None 
 
 
 class ValidationResult(BaseModel):

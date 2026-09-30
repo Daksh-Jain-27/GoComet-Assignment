@@ -99,9 +99,25 @@ def decide(ex: ExtractionResult, val: ValidationResult, rules: dict,
     elif unc:
         action = "human_review"
         trace.append("Rule 2: no confident mismatch but uncertain fields -> human review (no silent approval)")
-        reasoning = (f"No rule violations found, but {len(unc)} field(s) could not be confirmed: "
-                     + "; ".join(f"{FIELD_LABELS[c.name]} ({c.reason})" for c in unc)
-                     + ". A CG operator must check these against the document before approval.")
+        likely = [c for c in unc if c.rule_verdict is False]      # would violate rules if read right
+        unclear = [c for c in unc if c.rule_verdict is None]      # rule itself can't decide
+        passing = [c for c in unc if c.rule_verdict is True]      # would pass if read right
+        parts = [f"No confirmed violations, but {len(unc)} field(s) are below the confidence threshold."]
+        if likely:
+            parts.append(f"LIKELY PROBLEMS - {len(likely)} field(s) would break the rules if read correctly: "
+                        + "; ".join(_fmt(c) for c in likely) + ".")
+        if unclear:
+            parts.append("Needs judgement: " + "; ".join(f"{FIELD_LABELS[c.name]} ({c.reason})" for c in unclear) + ".")
+        if passing:
+            parts.append(f"{len(passing)} field(s) would pass if read correctly: "
+                        + ", ".join(FIELD_LABELS[c.name] for c in passing) + ".")
+        parts.append("CG must verify these on the document before any approval or amendment.")
+        reasoning = " ".join(parts)
+        # Most important first: likely problems, then judgement calls, then likely-fine fields.
+        checklist = ([f"Check first - likely wrong: {FIELD_LABELS[c.name]} reads \"{c.found}\", required {c.expected}"
+                    for c in likely]
+                    + [f"Judgement: {FIELD_LABELS[c.name]}: {c.reason}" for c in unclear]
+                    + [f"Confirm: {FIELD_LABELS[c.name]} reads \"{c.found}\" (would pass)" for c in passing])
     else:
         unverified = [f.name for f in ex.fields if f.value is not None and f.signals.get("grounded") is not True]
         if unverified and rules.get("auto_approve_requires_grounding", True):
@@ -126,6 +142,15 @@ def decide(ex: ExtractionResult, val: ValidationResult, rules: dict,
             "auto_approve with low-confidence field"
 
     subject = draft = drafted_by = None
+    # Provisional draft: when review is needed AND there are likely violations, prepare the
+    # amendment now so CG only verifies the flagged fields and sends. Still never auto-sent.
+    provisional = action == "human_review" and any(c.rule_verdict is False for c in unc)
+    if provisional:
+        likely = [c for c in unc if c.rule_verdict is False]
+        subject, draft = _template_draft(ex, likely, customer)
+        drafted_by = "template (provisional)"
+        trace.append(f"Provisional draft for {len(likely)} likely violation(s); CG must verify them on "
+                     f"the document before sending. NOT sent")
     if action == "amendment":
         if client is not None and model:
             try:

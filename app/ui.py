@@ -137,6 +137,9 @@ with tab_check:
 
         if d.get("amendment_draft"):
             st.subheader("Draft request to the shipper")
+            if "provisional" in (d.get("drafted_by") or ""):
+                st.warning("Provisional draft: the fields in it were read with low confidence. "
+                           "Check them on the document first, then edit or send.")
             st.caption(f"Written by: {d['drafted_by']}. Edit before sending. The agent never sends on its own.")
             subj = st.text_input("Subject", d["amendment_subject"], key=f"subj-{r['run_id']}")
             body = st.text_area("Message", d["amendment_draft"], height=260, key=f"body-{r['run_id']}")

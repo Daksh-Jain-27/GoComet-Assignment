@@ -144,6 +144,7 @@ def validate(ex: ExtractionResult, rules: dict) -> ValidationResult:
             continue
 
         ok, expected, why = fn(f.value, rules)
+        base["rule_verdict"] = ok
         if f.confidence < thr:
             # SAFETY INVARIANT: low confidence always surfaces, whatever the rule says.
             verdict = {True: "would match", False: "would NOT match", None: "undetermined"}[ok]
