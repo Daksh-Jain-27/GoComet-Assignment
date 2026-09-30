@@ -1,0 +1,16 @@
+langgraph==1.2.12
+langgraph-checkpoint-sqlite==3.1.1
+litellm==1.103.0
+pydantic==2.13.5
+pypdfium2==5.6.0
+pillow==12.1.1
+rapidfuzz==3.14.6
+reportlab==4.4.10
+PyYAML==6.0.3
+python-dotenv==1.2.2
+streamlit==1.64.0
+pandas==3.0.2
+# optional: OCR text layer for scanned docs (also needs the tesseract binary)
+# pytesseract==0.3.13
+# tests
+pytest==9.1.1
