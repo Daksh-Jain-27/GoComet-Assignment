@@ -1,9 +1,5 @@
 # Failure log
 
-Log every surprise here as you test: what happened, how you found it, the fix, and how it's
-tested now. The write-up asks for real failures from your own testing, so reproduce these on
-your machine and add your own, especially from LLM mode.
-
 ## F1: Absence claimed on a bad scan turned into confident "missing field" amendments
 - Found: `invoice_errors_scan.jpg` in offline mode, with tesseract installed.
 - What happened: OCR garbled or dropped lines. The parser said 5 fields were "not on document"
@@ -47,4 +43,3 @@ your machine and add your own, especially from LLM mode.
   test_same_model_agreement_is_not_enough.
 - Lesson: the fallback chain and the refine step interact. In production, split them: a
   refine model that must differ from the extractor, and a separate availability chain.
-  

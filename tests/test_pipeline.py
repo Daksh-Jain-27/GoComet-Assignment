@@ -1,5 +1,3 @@
-"""Behavioural tests for the trust guarantees. The LLM is faked so the tests are
-free, deterministic and run without a key - they test OUR guardrails, not the model."""
 import json
 from types import SimpleNamespace
 

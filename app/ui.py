@@ -1,8 +1,3 @@
-"""CG operator screen.  Run:  streamlit run app/ui.py
-
-Shows one real pipeline run: extracted fields + per-field confidence, validation
-result, decision + reasoning, discrepancy detail with the source snippet, and an
-editable amendment draft. Nothing is ever sent by the agent."""
 import json
 import sys
 from pathlib import Path

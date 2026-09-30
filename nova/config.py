@@ -1,5 +1,3 @@
-"""Central settings. Everything tunable comes from .env so reviewers can switch
-models / modes without touching code."""
 import os
 from dataclasses import dataclass, field
 from pathlib import Path

@@ -1,7 +1,4 @@
 """Run (or resume) the pipeline on one document from the command line.
-
-  python scripts/run_pipeline.py data/samples/invoice_errors.pdf
-  python scripts/run_pipeline.py data/samples/invoice_clean_scan.jpg --mode llm --force
   NOVA_CRASH_AT=validate python scripts/run_pipeline.py data/samples/invoice_clean.pdf   # crash
   python scripts/run_pipeline.py data/samples/invoice_clean.pdf                          # resumes
 """
