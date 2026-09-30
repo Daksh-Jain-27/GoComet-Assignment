@@ -91,16 +91,49 @@ with tab_check:
         summary = {"auto_approve": f"All {len(v['checks'])} fields match the rules for {rules['customer_name']}.",
                    "human_review": f"{len(unc)} field(s) need a human look before this can be approved.",
                    "amendment": f"{len(mism)} field(s) break the rules for {rules['customer_name']}. A draft request to the shipper is ready below."}[d["action"]]
+        likely = [c for c in unc if c.get("rule_verdict") is False]
+        if d["action"] == "human_review" and likely:
+            names = " and ".join(FIELD_LABELS[c["name"]] for c in likely)
+            n = "this field" if len(likely) == 1 else f"these {len(likely)} fields"
+            summary = (f"Likely amendment: {names} probably break the rules for {rules['customer_name']}, "
+                       f"but the values couldn't be fully verified. Check {n} on the document, "
+                       f"then send the prepared draft below.")
         st.markdown(f"<div class='decision d-{d['action']}'><h2>{TITLE[d['action']]}</h2><p>{summary}</p></div>",
                     unsafe_allow_html=True)
-        for w in ex.get("warnings", []) + r.get("errors", []):
+        notes = ex.get("warnings", []) + r.get("errors", [])
+        # Real failures stay loud. Routine explanations (fallback model used, confidence caps)
+        # go into a collapsed section so the operator sees the decision first.
+        loud = [w for w in notes if any(k in w for k in ("fell back to text-layer", "failed on all", "Budget"))]
+        for w in loud:
             st.warning(w)
+        if ex.get("text_source") != "pdf_text_layer" and not loud:
+            st.info("This is a scanned image, so the values couldn't be cross-checked against the "
+                    "document's text. Please confirm the flagged fields on the page image.")
+        if notes:
+            with st.expander(f"System notes ({len(notes)})"):
+                for w in notes:
+                    st.caption(w)
 
         left, right = st.columns([3, 2])
         with left:
             st.markdown(f"**{DOC_TYPE_LABELS.get(ex['doc_type'], 'Document')}** · `{doc['filename']}`")
-            rows = sorted(v["checks"], key=lambda c: (STATUS_ORDER[c["status"]], c["name"]))
-            df = pd.DataFrame([{"Field": FIELD_LABELS[c["name"]], "Status": c["status"], "Confidence": c["confidence"],
+            def rank(c):
+                if c["status"] == "mismatch":
+                    return 0
+                if c["status"] == "uncertain":
+                    return {False: 1, None: 2, True: 3}[c.get("rule_verdict")]
+                return 4
+
+            def rule_check(c):
+                if c["status"] == "match":
+                    return "passes"
+                if c["status"] == "mismatch":
+                    return "FAILS"
+                return {False: "likely fails", None: "can't tell", True: "likely passes"}[c.get("rule_verdict")]
+
+            rows = sorted(v["checks"], key=lambda c: (rank(c), c["name"]))
+            df = pd.DataFrame([{"Field": FIELD_LABELS[c["name"]], "Rule check": rule_check(c),
+                                "Status": c["status"], "Confidence": c["confidence"],
                                 "Found": c["found"] if c["found"] is not None else "(not on document)",
                                 "Expected": c["expected"]} for c in rows])
             st.dataframe(df, hide_index=True, width="stretch",
@@ -144,7 +177,12 @@ with tab_check:
             subj = st.text_input("Subject", d["amendment_subject"], key=f"subj-{r['run_id']}")
             body = st.text_area("Message", d["amendment_draft"], height=260, key=f"body-{r['run_id']}")
             if st.button("Mark as sent"):
+                edited = body.strip() != (d["amendment_draft"] or "").strip() or subj != d["amendment_subject"]
                 storage.record_feedback(r["run_id"], "send_amendment", detail=f"Subject: {subj}\n\n{body}")
+                # Sending the agent's draft IS accepting its decision; whether CG had to edit it
+                # is the draft-quality signal (Part 2: "sendable with one edit?").
+                storage.record_feedback(r["run_id"], "accept_decision",
+                                        detail="draft sent edited" if edited else "draft sent unedited")
                 st.success("Recorded as sent by CG. (Email plumbing is out of scope for Part 1; nothing left this machine.)")
 
         st.divider()

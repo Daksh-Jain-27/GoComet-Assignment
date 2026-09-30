@@ -81,8 +81,9 @@ class LLMClient:
         for attempt in range(SETTINGS.llm_max_retries + 1):
             t0 = time.perf_counter()
             try:
+                temp = {} if "gemini-3" in model else {"temperature": 0}
                 resp = self.litellm.completion(
-                    model=model, messages=msgs, temperature=0, max_tokens=max_tokens,
+                    model=model, messages=msgs, **temp, max_tokens=max_tokens,
                     timeout=SETTINGS.llm_timeout_s, response_format={"type": "json_object"},
                     metadata={"trace_id": self.run_id, "generation_name": node,
                               "trace_name": "nova-pipeline"},

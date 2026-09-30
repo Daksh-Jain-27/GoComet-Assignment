@@ -30,6 +30,10 @@ def compute() -> dict:
         n_fields = c.execute("SELECT COUNT(*) FROM fields").fetchone()[0]
         n_unc = c.execute("SELECT COUNT(*) FROM fields WHERE status='uncertain'").fetchone()[0]
         corrections = c.execute("SELECT COUNT(*) FROM feedback WHERE action='correct_field'").fetchone()[0]
+        sent = c.execute("SELECT COUNT(*) FROM feedback WHERE action='accept_decision' "
+                         "AND detail LIKE 'draft sent%'").fetchone()[0]
+        sent_unedited = c.execute("SELECT COUNT(*) FROM feedback WHERE action='accept_decision' "
+                                  "AND detail='draft sent unedited'").fetchone()[0]
         calls = [dict(r) for r in c.execute("SELECT ok, latency_ms, cost_usd FROM llm_calls")]
     n = len(docs)
     reviewed = [d for d in docs if d["reviewer_action"]]
@@ -48,6 +52,7 @@ def compute() -> dict:
         "amendment_pct": _pct(sum(d["decision"] == "amendment" for d in docs), n),
         "uncertain_field_pct": _pct(n_unc, n_fields),
         "field_corrections_by_cg": corrections,
+        "drafts_sent_unedited_pct": _pct(sent_unedited, sent),
         "latency_p50_ms": _quantile(lat, 0.5),
         "latency_p95_ms": _quantile(lat, 0.95),
         "cost_avg_usd": round(sum(cost) / len(cost), 5) if cost else None,
